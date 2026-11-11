@@ -65,7 +65,7 @@ function jobswp_blocks_format_binding( string $value, array $source_args ): stri
  * The jobswp/job-field source.
  *
  * Keys: company, budget, location, location_label, jobtype, jobtype_label,
- * apply_url, apply_label, views, views_label.
+ * apply_url, apply_label, views, views_label, report_url.
  *
  * @param array    $source_args    Binding arguments.
  * @param WP_Block $block_instance Bound block.

@@ -101,9 +101,76 @@ function jobswp_blocks_job_field( int $post_id, string $key ): string {
 			}
 			/* translators: %s: number of views. */
 			return sprintf( _n( 'Seen by %s candidate', 'Seen by %s candidates', $views, 'jobswp-blocks' ), number_format_i18n( $views ) );
+
+		case 'report_url':
+			if ( ! class_exists( 'Jobs_Dot_WP_Contact_Form' ) || 'publish' !== get_post_status( $post_id ) ) {
+				return '';
+			}
+			if ( method_exists( 'Jobs_Dot_WP_Contact_Form', 'get_report_url' ) ) {
+				return (string) Jobs_Dot_WP_Contact_Form::get_report_url( $post_id );
+			}
+			return add_query_arg( 'report_job', absint( $post_id ), home_url( '/feedback/' ) );
 	}
 
 	return '';
+}
+
+/**
+ * Builds the prefilled contact form subject for a reported job posting.
+ *
+ * Delegates to Jobs_Dot_WP_Contact_Form::get_report_subject() when available,
+ * falling back to a length-bounded subject so long job titles still preserve
+ * the job ID and stay under the contact form's 200-byte limit.
+ *
+ * @param int $job_id Job post ID.
+ * @return string Subject line, or empty string when the post is not a published job.
+ */
+function jobswp_blocks_report_subject( int $job_id ): string {
+	if ( $job_id <= 0 || 'job' !== get_post_type( $job_id ) || 'publish' !== get_post_status( $job_id ) ) {
+		return '';
+	}
+
+	if ( method_exists( 'Jobs_Dot_WP_Contact_Form', 'get_report_subject' ) ) {
+		return (string) Jobs_Dot_WP_Contact_Form::get_report_subject( $job_id );
+	}
+
+	$raw_title = html_entity_decode( wp_strip_all_tags( get_the_title( $job_id ) ), ENT_QUOTES, 'UTF-8' );
+	$raw_title = trim( (string) preg_replace( '/\s+/', ' ', $raw_title ) );
+	$raw_title = wp_check_invalid_utf8( $raw_title );
+
+	if ( '' === $raw_title ) {
+		/* translators: %d: job post ID. */
+		return sprintf( __( 'Reporting job #%d', 'jobswp-blocks' ), $job_id );
+	}
+
+	/* translators: 1: job title, 2: job post ID. */
+	$template  = __( 'Reporting - %1$s (%2$d)', 'jobswp-blocks' );
+	$overhead  = strlen( sprintf( $template, '', $job_id ) );
+	$max_bytes = 150;
+	$max_title = $max_bytes - $overhead;
+
+	if ( $max_title <= 0 ) {
+		return substr( sprintf( $template, '', $job_id ), 0, $max_bytes );
+	}
+
+	if ( strlen( $raw_title ) > $max_title ) {
+		$ellipsis  = '...';
+		$cut_bytes = max( 0, $max_title - strlen( $ellipsis ) );
+		if ( preg_match_all( '/./us', $raw_title, $chars ) ) {
+			$truncated = '';
+			foreach ( $chars[0] as $char ) {
+				if ( strlen( $truncated . $char ) > $cut_bytes ) {
+					break;
+				}
+				$truncated .= $char;
+			}
+			$raw_title = $truncated . ( $cut_bytes > 0 ? $ellipsis : '' );
+		} else {
+			$raw_title = substr( $raw_title, 0, $cut_bytes ) . ( $cut_bytes > 0 ? $ellipsis : '' );
+		}
+	}
+
+	return sprintf( $template, $raw_title, $job_id );
 }
 
 /**

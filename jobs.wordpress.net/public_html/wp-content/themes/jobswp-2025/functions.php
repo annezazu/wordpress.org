@@ -209,6 +209,23 @@ function jobswp_2025_register_block_styles(): void {
 	);
 
 	wp_enqueue_block_style(
+		'core/button',
+		array(
+			'handle' => 'jobswp-2025-block-core-button',
+			'src'    => get_theme_file_uri( 'assets/css/blocks/core-button.css' ),
+			'path'   => get_theme_file_path( 'assets/css/blocks/core-button.css' ),
+			'ver'    => $ver,
+		)
+	);
+	register_block_style(
+		'core/button',
+		array(
+			'name'  => 'link',
+			'label' => __( 'Link', 'jobswp-2025' ),
+		)
+	);
+
+	wp_enqueue_block_style(
 		'jobswp/open-to-work',
 		array(
 			'handle' => 'jobswp-2025-block-jobswp-open-to-work',
