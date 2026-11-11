@@ -69,6 +69,56 @@ function jobswp_blocks_contact_form_button( mixed $output, string $tag ): mixed 
 add_filter( 'do_shortcode_tag', 'jobswp_blocks_contact_form_button', 10, 2 );
 
 /**
+ * Prefills the feedback form subject when landing from a "Report this job" link.
+ *
+ * Steps back once Jobs_Dot_WP_Contact_Form provides get_report_subject(), and
+ * never overwrites an existing subject or validation flash response.
+ *
+ * @param mixed  $output Shortcode output.
+ * @param string $tag    Shortcode name.
+ * @return mixed
+ */
+function jobswp_blocks_contact_form_report_prefill( mixed $output, string $tag ): mixed {
+	if ( 'jobswp-contact-form' !== $tag || ! is_string( $output ) ) {
+		return $output;
+	}
+
+	if ( method_exists( 'Jobs_Dot_WP_Contact_Form', 'get_report_subject' ) ) {
+		return $output;
+	}
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Checking presence of validation flash redirect token before prefilling the contact form subject.
+	if ( isset( $_GET['jobswp_cf'] ) ) {
+		return $output;
+	}
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public job ID query parameter used only to prefill the contact form subject.
+	$job_id = isset( $_GET['report_job'] ) && is_string( $_GET['report_job'] ) ? absint( $_GET['report_job'] ) : 0;
+	if ( ! $job_id ) {
+		return $output;
+	}
+
+	$subject = jobswp_blocks_report_subject( $job_id );
+	if ( '' === $subject ) {
+		return $output;
+	}
+
+	$tags = new WP_HTML_Tag_Processor( $output );
+	while ( $tags->next_tag( 'input' ) ) {
+		if ( 'jobswp_contact_subject' === $tags->get_attribute( 'name' ) ) {
+			$existing = $tags->get_attribute( 'value' );
+			if ( null === $existing || '' === $existing ) {
+				$tags->set_attribute( 'value', $subject );
+			}
+			break;
+		}
+	}
+
+	return $tags->get_updated_html();
+}
+add_filter( 'do_shortcode_tag', 'jobswp_blocks_contact_form_report_prefill', 11, 2 );
+
+/**
  * Renders the submitted job's preview with the block theme's single-job design.
  *
  * After a job is submitted, the jobswp plugin prints content-single.php for

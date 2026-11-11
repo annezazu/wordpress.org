@@ -1,0 +1,18 @@
+.wp-block-button.is-style-link .wp-block-button__link {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background-color: transparent;
+	color: var(--wp--preset--color--muted);
+	font-weight: 400;
+	line-height: 1.5;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.wp-block-button.is-style-link .wp-block-button__link:hover,
+.wp-block-button.is-style-link .wp-block-button__link:focus-visible {
+	border-color: transparent;
+	background-color: transparent;
+	color: var(--wp--preset--color--ink);
+}
